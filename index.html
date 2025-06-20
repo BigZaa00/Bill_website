@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BillBuster - Smash Those Bills!</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -19,7 +19,7 @@
     <!-- Game Section -->
     <section class="bg-white rounded-lg shadow-md p-6 mb-6">
       <h2 class="text-2xl font-semibold mb-4">Play Bill Stack Smasher!</h2>
-      <p class="mb-4">Help Buster the Piggy Bank clear falling bills in this Tetris-style game! Use arrow keys to move and rotate the hammer block, and smash matching bills to clear them. Don’t let the bills stack to the top! Press 'R' to restart.</p>
+      <p class="mb-4">In this Tetris-style game, control Buster’s hammer block to smash falling bills. Use LEFT/RIGHT arrows to move, UP to rotate, DOWN to drop faster. Clear full rows to score points. Don’t let bills stack to the top! Press 'R' to restart if you lose.</p>
       <div id="game-canvas" class="mx-auto"></div>
       <p id="score-display" class="text-center text-lg font-bold mt-4">Score: 0</p>
     </section>
@@ -57,6 +57,11 @@
     const gridWidth = 10;
     const gridHeight = 20;
     const blockSize = 30;
+    const shapes = [
+      [[0, 0], [0, 1], [1, 0], [1, 1]], // Square
+      [[0, 0], [0, 1], [0, 2], [0, 3]], // Line
+      [[0, 0], [0, 1], [1, 1], [1, 2]]  // L-shape
+    ];
 
     function setup() {
       let canvas = createCanvas(gridWidth * blockSize, gridHeight * blockSize);
@@ -96,22 +101,29 @@
       // Draw current block (hammer)
       fill(139, 69, 19); // Brown for hammer
       for (let pos of currentBlock.positions) {
-        rect(pos.x * blockSize, pos.y * blockSize, blockSize, blockSize);
+        let px = (currentBlock.x + pos.x) * blockSize;
+        let py = (currentBlock.y + pos.y) * blockSize;
+        rect(px, py, blockSize, blockSize);
+        fill(0);
+        textSize(12);
+        text('🔨', px + 15, py + 20);
       }
-      fill(0);
-      textSize(12);
-      text('🔨', currentBlock.x * blockSize + 15, currentBlock.y * blockSize + 20);
 
-      // Move block down
+      // Move block down every 30 frames
       if (frameCount % 30 === 0) moveBlockDown();
     }
 
     function spawnBlock() {
+      let shape = random(shapes);
       currentBlock = {
-        x: Math.floor(gridWidth / 2),
+        x: Math.floor(gridWidth / 2) - 1,
         y: 0,
-        positions: [{x: 0, y: 0}] // Single block for simplicity
+        positions: shape.map(pos => ({ x: pos[0], y: pos[1] })),
+        rotation: 0
       };
+      if (!canMove(currentBlock.x, currentBlock.y)) {
+        gameOver = true;
+      }
     }
 
     function moveBlockDown() {
@@ -133,8 +145,8 @@
       }
     }
 
-    function canMove(newX, newY) {
-      for (let pos of currentBlock.positions) {
+    function canMove(newX, newY, newPositions = currentBlock.positions) {
+      for (let pos of newPositions) {
         let x = newX + pos.x;
         let y = newY + pos.y;
         if (x < 0 || x >= gridWidth || y >= gridHeight || (y >= 0 && grid[y][x])) {
@@ -142,6 +154,17 @@
         }
       }
       return true;
+    }
+
+    function rotateBlock() {
+      let newPositions = currentBlock.positions.map(pos => ({
+        x: -pos.y,
+        y: pos.x
+      }));
+      if (canMove(currentBlock.x, currentBlock.y, newPositions)) {
+        currentBlock.positions = newPositions;
+        currentBlock.rotation = (currentBlock.rotation + 90) % 360;
+      }
     }
 
     function checkLines() {
@@ -174,26 +197,10 @@
           moveBlockDown();
         }
         if (keyCode === UP_ARROW) {
-          // Rotate (simplified for single block)
-          // No rotation needed for single block
+          rotateBlock();
         }
       }
     }
-  उद
-
-**How to Play**:
-- **Game**: In "Bill Stack Smasher," bills fall as Tetris-like blocks in a 10x20 grid. Control Buster’s hammer block using the left and right arrow keys to move and the down arrow to speed up descent. Align the hammer to land on bills, clearing full rows to earn 100 points per row. If bills stack to the top, it’s game over. Press 'R' to restart.
-- **Objective**: Clear as many bill rows as possible to rack up a high score, humorously smashing financial stress.
-
-**Website Details**:
-- **Structure**: The site includes a header with the BillBuster logo, a game section with the p5.js Tetris-style game, an about section for the memecoin, and a community section with links to X and a placeholder whitepaper.
-- **Styling**: Tailwind CSS ensures a clean, responsive design with a blue and white theme.
-- **Game Mechanics**: The game uses a simplified Tetris mechanic with single-block "bills" and a hammer block for smashing. Clearing full rows adds points, and the game ends if the stack reaches the top. It’s lightweight and browser-friendly.
-
-**Notes**:
-- The game uses p5.js and Tailwind CSS via CDNs, requiring no local dependencies.
-- The Tetris mechanic is simplified (single-block pieces) to keep it lightweight and aligned with the bill-smashing theme. I can add more complex Tetris shapes if desired.
-- The whitepaper link is a placeholder; let me know if you want a real link or additional artifact.
-- Best played on desktop due to arrow key controls; I can add touch support for mobile if needed.
-
-Want to add features like different block shapes, sound effects, or a leaderboard?
+  </script>
+</body>
+</html>
