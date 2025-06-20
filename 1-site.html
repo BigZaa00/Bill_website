@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BillBuster - Smash Those Bills!</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+  <!-- Header -->
+  <header class="bg-blue-600 text-white py-4 text-center">
+    <h1 class="text-4xl font-bold">BillBuster ($BILL)</h1>
+    <p class="text-lg mt-2">Stack and smash those bills with a laugh!</p>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-4xl mx-auto p-4">
+    <!-- Game Section -->
+    <section class="bg-white rounded-lg shadow-md p-6 mb-6">
+      <h2 class="text-2xl font-semibold mb-4">Play Bill Stack Smasher!</h2>
+      <p class="mb-4">Help Buster the Piggy Bank clear falling bills in this Tetris-style game! Use arrow keys to move and rotate the hammer block, and smash matching bills to clear them. Don’t let the bills stack to the top! Press 'R' to restart.</p>
+      <div id="game-canvas" class="mx-auto"></div>
+      <p id="score-display" class="text-center text-lg font-bold mt-4">Score: 0</p>
+    </section>
+
+    <!-- About Section -->
+    <section class="bg-white rounded-lg shadow-md p-6 mb-6">
+      <h2 class="text-2xl font-semibold mb-4">About BillBuster</h2>
+      <p class="mb-4">BillBuster ($BILL) is a comedy-driven memecoin for everyone grinding through rent, groceries, and bills. With Buster, our piggy bank mascot, we turn financial stress into laughs with memes, games, and community vibes. Join us!</p>
+      <ul class="list-disc pl-6">
+        <li>Weekly Meme Battles: Share bill-busting memes on X for $BILL rewards.</li>
+        <li>Charity: 1% of transactions supports emergency bill relief.</li>
+        <li>Staking: Earn "Smash Bucks" by holding $BILL.</li>
+      </ul>
+    </section>
+
+    <!-- Community Section -->
+    <section class="bg-white rounded-lg shadow-md p-6">
+      <h2 class="text-2xl font-semibold mb-4">Join the Hustle</h2>
+      <p class="mb-4">Get in on the fun! Follow us on X, share your broke-life memes with #BillBuster, and check out our whitepaper for more.</p>
+      <div class="flex justify-center space-x-4">
+        <a href="https://x.com" target="_blank" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Follow on X</a>
+        <a href="#" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">Whitepaper</a>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-blue-600 text-white text-center py-4">
+    <p>© 2025 BillBuster. All rights reserved. Keep smashing those bills!</p>
+  </footer>
+
+  <!-- Game Logic -->
+  <script>
+    let grid, currentBlock, score, gameOver;
+    const gridWidth = 10;
+    const gridHeight = 20;
+    const blockSize = 30;
+
+    function setup() {
+      let canvas = createCanvas(gridWidth * blockSize, gridHeight * blockSize);
+      canvas.parent('game-canvas');
+      grid = Array(gridHeight).fill().map(() => Array(gridWidth).fill(0));
+      score = 0;
+      gameOver = false;
+      spawnBlock();
+    }
+
+    function draw() {
+      if (gameOver) {
+        background(255, 100, 100);
+        textAlign(CENTER, CENTER);
+        textSize(32);
+        fill(0);
+        text('Game Over! Score: ' + score, width / 2, height / 2);
+        textSize(16);
+        text('Press R to Restart', width / 2, height / 2 + 40);
+        return;
+      }
+
+      background(220);
+      // Draw grid
+      for (let y = 0; y < gridHeight; y++) {
+        for (let x = 0; x < gridWidth; x++) {
+          if (grid[y][x] === 1) {
+            fill(0, 255, 0); // Bill block
+            rect(x * blockSize, y * blockSize, blockSize, blockSize);
+            fill(0);
+            textSize(12);
+            text('$', x * blockSize + 15, y * blockSize + 20);
+          }
+        }
+      }
+
+      // Draw current block (hammer)
+      fill(139, 69, 19); // Brown for hammer
+      for (let pos of currentBlock.positions) {
+        rect(pos.x * blockSize, pos.y * blockSize, blockSize, blockSize);
+      }
+      fill(0);
+      textSize(12);
+      text('🔨', currentBlock.x * blockSize + 15, currentBlock.y * blockSize + 20);
+
+      // Move block down
+      if (frameCount % 30 === 0) moveBlockDown();
+    }
+
+    function spawnBlock() {
+      currentBlock = {
+        x: Math.floor(gridWidth / 2),
+        y: 0,
+        positions: [{x: 0, y: 0}] // Single block for simplicity
+      };
+    }
+
+    function moveBlockDown() {
+      if (canMove(currentBlock.x, currentBlock.y + 1)) {
+        currentBlock.y++;
+      } else {
+        // Place block
+        for (let pos of currentBlock.positions) {
+          let newX = currentBlock.x + pos.x;
+          let newY = currentBlock.y + pos.y;
+          if (newY < 0) {
+            gameOver = true;
+            return;
+          }
+          grid[newY][newX] = 1;
+        }
+        checkLines();
+        spawnBlock();
+      }
+    }
+
+    function canMove(newX, newY) {
+      for (let pos of currentBlock.positions) {
+        let x = newX + pos.x;
+        let y = newY + pos.y;
+        if (x < 0 || x >= gridWidth || y >= gridHeight || (y >= 0 && grid[y][x])) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function checkLines() {
+      for (let y = gridHeight - 1; y >= 0; y--) {
+        if (grid[y].every(cell => cell === 1)) {
+          grid.splice(y, 1);
+          grid.unshift(Array(gridWidth).fill(0));
+          score += 100;
+          document.getElementById('score-display').innerText = 'Score: ' + score;
+        }
+      }
+    }
+
+    function keyPressed() {
+      if (gameOver && (key === 'r' || key === 'R')) {
+        grid = Array(gridHeight).fill().map(() => Array(gridWidth).fill(0));
+        score = 0;
+        document.getElementById('score-display').innerText = 'Score: ' + score;
+        gameOver = false;
+        spawnBlock();
+      }
+      if (!gameOver) {
+        if (keyCode === LEFT_ARROW && canMove(currentBlock.x - 1, currentBlock.y)) {
+          currentBlock.x--;
+        }
+        if (keyCode === RIGHT_ARROW && canMove(currentBlock.x + 1, currentBlock.y)) {
+          currentBlock.x++;
+        }
+        if (keyCode === DOWN_ARROW) {
+          moveBlockDown();
+        }
+        if (keyCode === UP_ARROW) {
+          // Rotate (simplified for single block)
+          // No rotation needed for single block
+        }
+      }
+    }
+  उद
+
+**How to Play**:
+- **Game**: In "Bill Stack Smasher," bills fall as Tetris-like blocks in a 10x20 grid. Control Buster’s hammer block using the left and right arrow keys to move and the down arrow to speed up descent. Align the hammer to land on bills, clearing full rows to earn 100 points per row. If bills stack to the top, it’s game over. Press 'R' to restart.
+- **Objective**: Clear as many bill rows as possible to rack up a high score, humorously smashing financial stress.
+
+**Website Details**:
+- **Structure**: The site includes a header with the BillBuster logo, a game section with the p5.js Tetris-style game, an about section for the memecoin, and a community section with links to X and a placeholder whitepaper.
+- **Styling**: Tailwind CSS ensures a clean, responsive design with a blue and white theme.
+- **Game Mechanics**: The game uses a simplified Tetris mechanic with single-block "bills" and a hammer block for smashing. Clearing full rows adds points, and the game ends if the stack reaches the top. It’s lightweight and browser-friendly.
+
+**Notes**:
+- The game uses p5.js and Tailwind CSS via CDNs, requiring no local dependencies.
+- The Tetris mechanic is simplified (single-block pieces) to keep it lightweight and aligned with the bill-smashing theme. I can add more complex Tetris shapes if desired.
+- The whitepaper link is a placeholder; let me know if you want a real link or additional artifact.
+- Best played on desktop due to arrow key controls; I can add touch support for mobile if needed.
+
+Want to add features like different block shapes, sound effects, or a leaderboard?
